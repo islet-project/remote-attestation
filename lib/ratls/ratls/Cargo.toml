@@ -20,4 +20,4 @@ rustls-pemfile = "*"
 sha2 = "*"
 simple_asn1 = "*"
 x509-certificate = "*"
-rust-rsi = { git = "https://github.com/havner/rust-rsi" }
+rust-rsi = { path = "../../rust-rsi" }

@@ -1,3 +1,7 @@
+# FIXME
+
+THIS FILE NEEDS TO BE ADAPTED TO THE NEW ISLET-RA REPOSITORY.
+
 # Introduction
 
 The process consists of several parts:

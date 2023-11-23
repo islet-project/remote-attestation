@@ -14,5 +14,5 @@ serde = { version = "*", features = ["derive", "alloc"] }
 serde_json = { version = "*", features = ["alloc"] }
 serde_yaml = "*"
 uuid = { version = "*", features = ["serde"] }
-rust-rsi = { git = "https://github.com/Havner/rust-rsi.git" }
+rust-rsi = { path = "../../lib/rust-rsi" }
 rand = "*"

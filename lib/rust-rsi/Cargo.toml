@@ -1,0 +1,22 @@
+[package]
+name = "rust-rsi"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Lukasz Pawelczyk" ]
+description = "ioctls and some initial handling of ARM CCA RSI API"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hex = "*"
+nix = { version = "*", features = ["fs", "ioctl"] }
+ciborium = "*"
+coset = "*"
+p256 = "*"
+p384 = "*"
+ecdsa = "*"
+sha2 = "*"
+
+[build-dependencies]
+cc = "*"
+bindgen = "*"

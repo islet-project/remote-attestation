@@ -9,9 +9,9 @@ description = "Command line interface for the RSI kernel module"
 
 [dependencies]
 clap = { version = "*", features = ["derive"] }
-rust-rsi = { git = "https://github.com/Havner/rust-rsi.git" }
+rust-rsi = { path = "../../lib/rust-rsi" }
 rand = "*"
-ratls = { git = "https://github.sec.samsung.net/SYSSEC/ratls.git" }
+ratls = { path = "../../lib/ratls/ratls" }
 
 [profile.release]
 strip = true

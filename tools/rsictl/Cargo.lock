@@ -963,7 +963,6 @@ dependencies = [
 [[package]]
 name = "ratls"
 version = "0.1.0"
-source = "git+https://github.sec.samsung.net/SYSSEC/ratls.git#da96112231e06222025e6581f148f76da36d1e5b"
 dependencies = [
  "base64",
  "bcder",
@@ -1095,7 +1094,6 @@ dependencies = [
 [[package]]
 name = "rust-rsi"
 version = "0.1.0"
-source = "git+https://github.com/Havner/rust-rsi.git#c3347809c4bc67fd13b6df238c2e9bb7d9bddaf1"
 dependencies = [
  "bindgen",
  "cc",

@@ -49,13 +49,3 @@ pub(crate) fn verify_print_platform(token: &[u8], key: &[u8]) -> Result<(), rust
     rust_rsi::print_token_platform(&token);
     Ok(())
 }
-
-pub(crate) fn verify_print_c(token: &[u8]) -> Result<(), rust_rsi::CTokenError>
-{
-    let claims = rust_rsi::c_verify_token(token)?;
-    print!("\n\n\n !!!!!!!!!!!!!!! C PRINT !!!!!!!!!!!!!!! \n\n\n");
-    rust_rsi::c_print_token(&claims);
-    print!("\n\n\n !!!!!!!!!!!!!!! RUST PRINT !!!!!!!!!!!!!!! \n\n\n");
-    rust_rsi::c_print_token_rust(&claims);
-    Ok(())
-}

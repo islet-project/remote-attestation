@@ -1,0 +1,18 @@
+[package]
+name = "rocli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base64 = { version = "*", features = ["alloc"] }
+base64-serde = "*"
+chrono = { version = "*", features = ["alloc", "serde"] }
+clap = { version = "*", features = ["derive"] }
+serde = { version = "*", features = ["derive", "alloc"] }
+serde_json = { version = "*", features = ["alloc"] }
+serde_yaml = "*"
+uuid = { version = "*", features = ["serde"] }
+rust-rsi = { git = "https://github.com/Havner/rust-rsi.git" }
+rand = "*"

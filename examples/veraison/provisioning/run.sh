@@ -1,5 +1,9 @@
 #!/bin/bash
 
+################################################################
+#  This file needs to be upgraded for the islet-ra repository  #
+################################################################
+
 set -exuo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)

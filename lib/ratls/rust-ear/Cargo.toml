@@ -1,0 +1,22 @@
+[package]
+name = "ear"
+description = "EAT Attestation Results implementation"
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/veraison/rust-ear"
+readme = "README.md"
+license = "Apache-2.0"
+keywords = ["ear", "serde"]
+categories = ["data-structures", "encoding"]
+
+[dependencies]
+base64 = "*"
+ciborium = "*"
+cose-rust = "*"
+hex = "*"
+jsonwebtoken = "8"
+openssl = "*"
+phf = {version = "*", features = ["macros", "serde"]}
+serde = {version = "*", features = ["derive"]}
+serde_json = {version = "*", features = ["raw_value"]}
+thiserror = "*"

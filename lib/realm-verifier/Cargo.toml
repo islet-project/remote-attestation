@@ -14,6 +14,6 @@ log = "*"
 serde = {version = "*", features = ["derive"]}
 serde_json = "*"
 tinyvec = "*"
-rust-rsi = { git = "https://github.com/Havner/rust-rsi.git" }
-ratls = { git = "https://github.sec.samsung.net/SYSSEC/ratls.git" }
-veraison-verifier = { git = "https://github.sec.samsung.net/SYSSEC/ratls.git" }
+rust-rsi = { path = "../rust-rsi" }
+ratls = { path = "../ratls/ratls" }
+veraison-verifier = { path = "../ratls/veraison-verifier" }

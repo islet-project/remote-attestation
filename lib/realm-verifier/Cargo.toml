@@ -1,0 +1,19 @@
+[package]
+name = "realm-verifier"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = {version = "*", features = ["derive"]}
+chrono = "*"
+env_logger ="*"
+hex = "*"
+log = "*"
+serde = {version = "*", features = ["derive"]}
+serde_json = "*"
+tinyvec = "*"
+rust-rsi = { git = "https://github.com/Havner/rust-rsi.git" }
+ratls = { git = "https://github.sec.samsung.net/SYSSEC/ratls.git" }
+veraison-verifier = { git = "https://github.sec.samsung.net/SYSSEC/ratls.git" }

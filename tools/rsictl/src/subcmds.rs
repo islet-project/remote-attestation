@@ -1,7 +1,5 @@
-use crate::{resolver, tools};
+use crate::tools;
 use clap::Args;
-use ratls::RaTlsClient;
-use std::{io::Write, sync::Arc};
 
 
 pub(crate) type GenericResult = Result<(), Box<dyn std::error::Error>>;
@@ -154,38 +152,5 @@ pub(crate) fn verify_platform(args: &VerifyPlatformArgs) -> GenericResult
     let token = tools::file_read(&args.input)?;
     let key = tools::file_read(&args.key)?;
     tools::verify_print_platform(&token, &key)?;
-    Ok(())
-}
-
-#[derive(Args, Debug)]
-pub(crate) struct RaTLSArgs
-{
-    /// Path to root CA cert
-    #[arg(short, long)]
-    root_ca: String,
-
-    /// Url to ratls server
-    #[arg(short = 'u', long, default_value = "localhost:1337")]
-    server_url: String,
-
-    /// Server name, overriden if server is attested
-    #[clap(short = 'n', long, default_value = "localhost")]
-    server_name: String,
-}
-
-pub(crate) fn ratls(args: &RaTLSArgs) -> GenericResult
-{
-    ratls::init_logger();
-
-    let client = RaTlsClient::new(ratls::ClientMode::AttestedClient {
-        client_token_resolver: Arc::new(resolver::IoctlTokenResolver()),
-        root_ca_path: args.root_ca.to_string()
-    })?;
-
-    let mut connection = client.connect(args.server_url.to_string(), args.server_name.to_string())?;
-    println!("Connection established");
-    write!(connection.stream(), "GIT")?;
-    println!("Work finished, exiting");
-
     Ok(())
 }

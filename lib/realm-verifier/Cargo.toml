@@ -6,9 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = {version = "*", features = ["derive"]}
-chrono = "*"
-env_logger ="*"
 hex = "*"
 log = "*"
 serde = {version = "*", features = ["derive"]}
@@ -16,4 +13,3 @@ serde_json = "*"
 tinyvec = "*"
 rust-rsi = { path = "../rust-rsi" }
 ratls = { path = "../ratls/ratls" }
-veraison-verifier = { path = "../ratls/veraison-verifier" }

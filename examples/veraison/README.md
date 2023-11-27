@@ -1,6 +1,6 @@
 # FIXME
 
-THIS FILE NEEDS TO BE ADAPTED TO THE NEW ISLET-RA REPOSITORY.
+THIS FILE NEEDS TO BE VERIFIED.
 
 # Introduction
 
@@ -20,32 +20,35 @@ The following repos will be used (they have some additional dependencies like
 `rust-rsi`, `ratls` and `realm-verfier`, but it's not required to clone those
 repos manually):
 
-* camellia-hes: https://github.sec.samsung.net/SYSSEC/camellia-hes
-* linux-rsi: https://github.sec.samsung.net/SYSSEC/linux-rsi
-* fvp-cca-scripts: https://github.sec.samsung.net/SYSSEC/fvp-cca-scripts
-* rim-extractor: https://github.sec.samsung.net/SYSSEC/rim-extractor
-* rocli: https://github.sec.samsung.net/SYSSEC/rocli
+* Islet: https://github.com/Samsung/islet that provides:
+
+	* the whole SW/FW stack and scripts for running the emulated environment under the FVP
+	* Islet HES https://github.com/Samsung/islet/tree/main/hes
+	* kvmtool-rim-measurer from https://github.com/Samsung/islet/tree/main/third-party/
+
+
+* Islet Remote Attestation: https://github.com/Samsung/islet that provides:
+
+	* rocli: https://github.com/Samsung/islet-ra/tree/main/tools/rocli
+	* realm-verifier: https://github.com/Samsung/islet-ra/tree/main/lib/realm-verifier
+	* ratls: https://github.com/Samsung/islet-ra/tree/main/lib/ratls
+	* rust-rsi: https://github.com/Samsung/islet-ra/tree/main/lib/rust-rsi
+
 * veraison: https://github.com/veraison/services
-* realm-verifier: https://github.sec.samsung.net/SYSSEC/realm-verifier
-
-No need to clone, just for completeness:
-
-* rust-rsi: https://github.com/havner/rust-rsi
-* ratls: https://github.sec.samsung.net/SYSSEC/ratls
 
 # Provisioning
 
 This is emulated by generating CPAK public key using one of camellia-hes
 utilities:
 
-    CCA/camellia-hes/cpak-generator $ cargo run
+    CCA/islet/hes/cpak-generator $ cargo run
 
 This will by default generate a CPAK using dummy GUK and dummy BL2 hash files
-from `CCA/camellia-hes/res` directory and save both key binary and PEM format
+from `Islet/hes/res` directory and save both key binary and PEM format
 respectively as:
 
-    CCA/camellia-hes/out/cpak_public.bin
-    CCA/camellia-hes/out/cpak_public.pem
+    CCA/islet/hes/out/cpak_public.bin
+    CCA/islet/hes/out/cpak_public.pem
 
 # Gathering measurements
 
@@ -57,51 +60,24 @@ The platform measurement is done by getting the whole CCA token. Platform
 measurements are saved there.
 
 This is performed by some specifically prepared realm (e.g. one provided by
-`fvp-cca-scripts`). To do this do the following:
+`Islet/scripts/fvp-cca`). To do this do the following:
 
-    CCA/fvp-cca-scripts $ ./scripts/fvp-cca.sh init
-    CCA/fvp-cca-scripts $ ./scripts/fvp-cca.sh build
-    CCA/linux-rsi $ make
+    CCA/islet $ ./scripts/init.sh
+    CCA/islet $ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet --hes
 
 The first command will initialize the scripts and download all required
-components. The second command will build the platform and the realm and prepare
-the output directories. The third command will compile RSI module and command
-line tool and will place them in the fvp-cca-scripts directory structure, in the
-shared directory that will be visible for the realm.
-
-Now we need to run HES:
-
-    CCA/camellia-hes/camellia-hes-host-app $ cargo run -- -t
-
-And we need to run the FVP:
-
-    CCA/fvp-cca-scripts $ ./scripts/fvp-cca.sh run
-
-If run under X terminals should open with telnet 5000/5003. If not we can run
-those telnets manually on two separate terminals:
-
-    $ telnet localhost 5000
-    $ telnet localhost 5003
-
-Port 5000 is the main terminal with console. 5003 is RMM. We don't need the
-second for now, but the telnet itself is necessary for FVP to work
-properly. When booting the TF-A is modified to talk to HES over the serial on
-port 5002. No need to configure anything, it should work out of the box and the
-result of this communication should be visible on both, the camelia-hes-host-app
-terminal and on the 5000 telnet when TF-A is booting.
+components. The second command will build the platform and the realm and run the FVP emulator
+and HES application.
 
 When the FVP linux is booted we need to run the realm:
 
-    Welcome to Buildroot, type root or test to login
-    buildroot login: root
-    # cd /shared
-    # ./realm.sh
+    $ ./launch-realm.sh
 
 This will take a lot of time (FVP is slow). Wait until you have a realm
 shell. Then load RSI module and get the token:
 
-    ~ # cd /shared
-    /shared # ./module.sh
+    # cd /shared
+    /shared # inmod rsi.ko
     /shared # ./rsictl attest -o token.bin
 
 For the token part challenge value will be randomized, but in here it doesn't
@@ -112,39 +88,68 @@ following command may be required as FVP doesn't always close cleanly:
 
 The generated token is saved as the following file:
 
-    CCA/fvp-cca-scripts/out/shared_dir/token.bin
+    CCA/islet/out/shared/token.bin
 
 ## Realm measurement
 
 Realm measurement is done by generating a json file containing realm information
 that will be fed to realm verifier.
 
-This is performed by a small helper program called `rim-extractor`. It basically
-runs the realm with a modified RMM that will display and intercept the RIM
+This is performed by a small helper program called `kvmtool-rim-measurer`. It basically
+runs a modified lkvm tool that calculates and displays the RIM
 value. The process looks as follows:
 
-* generate/get the realm you want to use (for now generated by fvp-cca-scripts,
-  those files can be taken from `CCA/fvp-cca-scripts/out/shared_dir`,
-  `Image.realm initramfs-realm.cpio.gz lkvm realm.sh`)
-* copy the realm files we want to measure to `CCA/rim-extractor/cca/realm`
-* make sure no other FVP is running currently
-* run the `rim-extractor`
+* generate/get the realm you want to use (for now generated by fvp-cca script,
+  those files can be taken from `CCA/islet/out/shared`,
+  `Image.realm initramfs-realm.cpio.gz realm.sh`)
+* Build the kvmtool-rim-measurer tool according to the description https://github.com/Samsung/islet-asset/blob/3rd-kvmtool-rim-measurer/BUILD-RIM-MEASURER
+* Create a dedicated directory for realm files (e.g. `CCA/islet/out/rim-extractor``) and copy the realm files we want to measure to that folder
+* copy the resulting `lkvm-rim-measurer` to the `CCA/islet/out/rim-extractor` folder
+* substitute `lkvm` to `lkvm-rim-measurer` in the `CCA/islet/out/rim-extractor/realm.sh` script
+* get into the `CCA/islet/out/rim-extractor` folder and run the `realm.sh` script
+* The `lkvm-rim-measurer`` will display the resulting RIM (e.g. RIM: F58AF6D6A022F113627B1E0B1E0D9B9A1BFB460207AC29721E84BCEF4B4F5CE08351684444BC11CF329D1D4C807BB621807916C2DF4F56B7326E8D16692546A8)
 
-Example:
+Create a `realm.json` file according to the below template and replace the `TO_BE_REPLACED` term with the extracted RIM value.
 
-    CCA/rim-extractor $ ls -l cca/realm/
-    total 19212
-    -rw-rw-r-- 1 havner havner 15272448 Aug 11 16:48 Image.realm
-    -rw-rw-r-- 1 havner havner  1636861 Aug 11 16:49 initramfs-realm.cpio.gz
-    -rwxrwxr-x 1 havner havner  2854576 Aug 11 16:49 lkvm
-    -rwxrwxr-x 1 havner havner     1122 Aug 11 16:49 realm.sh
-    CCA/rim-extractor $ cargo run
-    (...)
-    Realm JSON 'CCA/rim-extractor/json/realm.json' written
+```json
+{
+    "version": "0.1",
+    "issuer": {
+        "name": "Samsung",
+        "url": "https://cca-realms.samsung.com/"
+    },
+    "realm": {
+        "uuid": "f7e3e8ef-e0cc-4098-98f8-3a12436da040",
+        "name": "Data Processing Service",
+        "version": "1.0.0",
+        "release-timestamp": "2024-11-27T05:21:31Z",
+        "attestation-protocol": "HTTPS/RA-TLSv1.0",
+        "port": 8088,
+        "reference-values": {
+            "rim": "TO_BE_REPLACED",
+            "rems": [
+                [
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                    "0000000000000000000000000000000000000000000000000000000000000000"
+                ],
+                [
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                    "7d43aefe4c6a955cd0753bccee2e707232d2b44b84c4607ac925597419ac104d",
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                    "9e6f6535ee6cf18be0eae95d0a2fd6876ccdc216a172e8f15607fe1a814d0b6c"
+                ]
+            ],
+            "hash-algo": "sha-256"
+        }
+    }
+}
+```
 
-The resulting json is saved as the following file:
+The resulting json should be saved as the following file:
 
-    CCA/rim-extractor/json/realm.json
+    CCA/islet/out/rim-extractor/realm.json
 
 Caveat: only RIM is supported for now, the REMs are placeholders.
 
@@ -154,7 +159,7 @@ Those 2 processes should end with the following things
 
 * Prepared realm that won't be modified anymore:
   `Image.realm initramfs-realm.cpio.gz lkvm realm.sh`
-  For now we use the one generated by fvp-cca-scripts
+  For now we use the one generated by fvp-cca
 * Public CPAK key: `cpak_public.bin cpak_public.pem`
 * Platform measurement: `token.bin`
 * Realm measurement: `realm.json`
@@ -166,37 +171,24 @@ using a _safe_ communication channel.
 
 This is done in the same way we run realm to get the token.
 
-Run the HES:
+Run the FVP with HES and network this time:
 
-    CCA/camellia-hes/camellia-hes-host-app $ cargo run -- -t
-
-Run the FVP with network this time:
-
-    CCA/fvp-cca-scripts $ ./scripts/fvp-cca.sh net_start
-    CCA/fvp-cca-scripts $ ./scripts/fvp-cca.sh run
-
-Connect to terminals (or use those spawned in X):
-
-    $ telnet localhost 5000
-    $ telnet localhost 5003
+    Islet $ ./scripts/fvp-cca --normal-world=linux --realm=linux-net --rmm=islet --hes
 
 When FVP is booted run the realm:
 
-    Welcome to Buildroot, type root or test to login
-    buildroot login: root
-    # cd /shared
-    # ./realm.sh
+    # ./launch-realm.sh
 
 Load the RSI module:
 
-    ~ # cd /shared
-    /shared # ./module.sh
+    # cd /shared
+    /shared # inmod rsi.ko
 
 # Running and provisioning verification services (Veraison, realm-verifier)
 
-First of all, before deploying Veraison, apply a patch to Veraison code:
+First of all, before deploying Veraison, apply a patch to Veraison code (https://github.com/veraison/services):
 
-    CCA/services $ cat ../rocli/veraison-patch | git apply
+    CCA/services $ cat ../islet-ra/examples/veraison/veraison-patch | git apply
 
 Then it's possible to deploy a Veraison Docker and source some useful
 commands from veraison env file:
@@ -219,7 +211,7 @@ Now install go dependencies for rocli script:
 
 And run provisioning of token and cpak in PEM format:
 
-    CCA/rocli/demo $ ./run.sh -t <path/to/token.bin> -k <path/to/cpak_public.pem>
+    CCA/islet-ra/examples/veraison/provisioning $ ./run.sh -t <path/to/token.bin> -k <path/to/cpak_public.pem>
 
 This will provision a reference token and public CPAK to allow
 Veraison verification.
@@ -233,26 +225,26 @@ provisioned again:
 
     $ veraison clear-stores
 
-Run realm-verifier binary, which is provisioned with `realm.json` and
+Run reliant-party, which is provisioned with `realm.json` and
 acts as Reliant Party with communication to realm and Veraison
 services (this binary takes several parameters, most should not be of
 any concern apart from passing latest reference values in `realm.json`):
 
-    CCA/realm-verifier $ cargo run -- -r <path/to/realm.json>
+     CCA/islet-ra/examples/veraison/reliant-party $ cargo run -- -r <path/to/realm.json>
 
 If needed, '-b' option can be used to pass different network interface binding:
 
-    CCA/realm-verifier $ cargo run -- -r <path/to/realm.json> -b <LOCAL_IP:PORT>
+    CCA/islet-ra/examples/veraison/reliant-party $ cargo run -- -r <path/to/realm.json> -b <LOCAL_IP:PORT>
 
-Realm-verifier awaits on given IP:PORT for communication from Realm and
+Reliant-party awaits on given IP:PORT for communication from Realm and
 utilizes our `ratls` Rust library and `realm-verifier` library (for `realm.json`
 reference values verification) to verify client CCA token.
 
 # Verification itself
 
 On the realm side (the one we already run) just trigger the verification
-process. This is done using `rsictl` tool as well. It will initialize RATLS
-connection to verification service by performing the necessary steps:
+process. This is done using `realm-application` (`CCA/islet-ra/examples/veraison/realm-application`).
+It will initialize RATLS connection to verification service by performing the necessary steps:
 
 * receive challenge value from verification service
 * request the token from RMM/TF-A/HES using the challenge
@@ -261,24 +253,24 @@ connection to verification service by performing the necessary steps:
 
 This is done with the following command on the realm:
 
-    shared # ./rsictl ra-tls -r root-ca.crt -u <SERVER_IP:PORT>
+    shared # ./realm-application root-ca.crt -u <SERVER_IP:PORT>
 
 That command will take a very long time as Realm on FVP is slow and it does
 asymmetric cryptography (RSA key generation).
 
 # Verification success
 
-When verification succeeds, both `rsictl` and `realm-verifier` should not
+When verification succeeds, both `realm-application` and `realm-verifier` should not
 output any errors. For both binaries you can set RUST_LOG
 environmental variable to change log level (info, debug):
 
 Realm:
 
-    shared # RUST_LOG=info ./rsictl ra-tls -r root-ca.crt -u <SERVER_IP:PORT>
+    shared # RUST_LOG=info ./realm-application ra-tls -r root-ca.crt -u <SERVER_IP:PORT>
 
 Reliant party:
 
-    CCA/realm-verifier $ RUST_LOG=info cargo run -- -r <path/to/realm.json> -b <LOCAL_IP:PORT>
+    CCA/islet-ra/examples/veraison/reliant-party $ RUST_LOG=info cargo run -- -r <path/to/realm.json> -b <LOCAL_IP:PORT>
 
 With that log level realm client should report successful socket write
 with 'GIT' message and verifying server should output that message.

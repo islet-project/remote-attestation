@@ -1,16 +1,16 @@
 use rust_rsi::{AttestationClaims, PlatClaims, PlatSwComponent};
 use crate::tags::{Comid, Environment, AttesterVerificationKeys,
-    VerificationKey, Triples, Config, ReferenceValue, Corim, Output, Measurement};
+    VerificationKey, Triples, Config, ReferenceValue, Corim, Output, Measurement, TypeValue};
 use crate::tools::read_string;
 use crate::error::RocliError;
 
-pub(crate) fn make_endorsements(cpak: Vec<String>, token: AttestationClaims, config: Config) -> Result<Output, RocliError> {
+pub(crate) fn make_endorsements(cpak: Vec<String>, cpak_type: Vec<String>, token: AttestationClaims, config: Config) -> Result<Output, RocliError> {
     let plat_claims = PlatClaims::from_raw_claims(&token.platform_claims.token_claims)?;
     let mut keys = Vec::new();
 
-    for cpak in cpak.into_iter() {
-        let key = read_string(cpak)?;
-        keys.push(VerificationKey { key });
+    for (ty, val) in cpak_type.into_iter().zip(cpak.into_iter()){
+        let key = read_string(val)?;
+        keys.push(TypeValue { ty, val: key });
     }
     let mut envir: Environment = plat_claims.into();
 

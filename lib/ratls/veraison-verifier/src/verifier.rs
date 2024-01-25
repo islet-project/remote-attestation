@@ -2,8 +2,10 @@ use crate::{error::VeraisonTokenVeriferError, structs::{NewSessionresponse, Sess
 use ear::{Ear, TrustTier};
 use log::{error, info};
 use reqwest::blocking::Client;
+use base64::{Engine, engine::general_purpose::STANDARD as b64};
 
 use ratls::{InternalTokenVerifier, RaTlsError};
+use rust_rsi::{verify_token, RealmClaims};
 
 pub struct VeraisonTokenVerifer {
     host: String,
@@ -38,9 +40,12 @@ impl VeraisonTokenVerifer {
     }
 
     fn verify_token(&self, token: &[u8]) -> Result<(), VeraisonTokenVeriferError> {
+        let token_claims = verify_token(token, None)?;
+        let realm_claims = RealmClaims::from_raw_claims(&token_claims.realm_claims.token_claims, &token_claims.realm_claims.measurement_claims)?;
+
         let response = self.client.post(self.host.clone() + "/challenge-response/v1/newSession")
             .header("Accept", "application/vnd.veraison.challenge-response-session+json")
-            .query(&[("nonceSize", 32)])
+            .query(&[("nonce", b64.encode(realm_claims.challenge))])
             .send()?;
 
         let next_location = response.headers().get("Location")

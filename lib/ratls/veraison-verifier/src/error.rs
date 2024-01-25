@@ -8,7 +8,8 @@ pub enum VeraisonTokenVeriferError {
     VeraisonDidntProvideNextLocation,
     LocationHeaderIsNotAString,
     AttestationResultsVerificationError(ear::Error),
-    SubmoduleDoesNotAffirm(String)
+    SubmoduleDoesNotAffirm(String),
+    TokenParsingError(rust_rsi::TokenError)
 }
 
 impl From<reqwest::Error> for VeraisonTokenVeriferError {
@@ -20,6 +21,12 @@ impl From<reqwest::Error> for VeraisonTokenVeriferError {
 impl From<ear::Error> for VeraisonTokenVeriferError {
     fn from(value: ear::Error) -> Self {
         Self::AttestationResultsVerificationError(value)
+    }
+}
+
+impl From<rust_rsi::TokenError> for VeraisonTokenVeriferError {
+    fn from(value: rust_rsi::TokenError) -> Self {
+        Self::TokenParsingError(value)
     }
 }
 

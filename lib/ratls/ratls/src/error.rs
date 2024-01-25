@@ -20,7 +20,7 @@ pub enum RaTlsError {
     Base64DecodeError(DecodeError),
     Pkcs8Error(pkcs8::Error),
     Pkcs8SpkiError(pkcs8::spki::Error),
-    RcgenError(rcgen::RcgenError),
+    RcgenError(rcgen::Error),
     Asn1DecodeError(simple_asn1::ASN1DecodeErr),
     Asn1EncodeError(simple_asn1::ASN1EncodeErr),
     CertSignError(SignError),
@@ -84,8 +84,8 @@ impl From<pkcs8::spki::Error> for RaTlsError {
     }
 }
 
-impl From<rcgen::RcgenError> for RaTlsError {
-    fn from(value: rcgen::RcgenError) -> Self {
+impl From<rcgen::Error> for RaTlsError {
+    fn from(value: rcgen::Error) -> Self {
         Self::RcgenError(value)
     }
 }

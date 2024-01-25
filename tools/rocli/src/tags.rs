@@ -69,7 +69,7 @@ pub(crate) struct AttesterVerificationKeys {
     pub environment: Environment,
 
     #[serde(rename = "verification-keys")]
-    pub verification_keys: Vec<VerificationKey>
+    pub verification_keys: Vec<TypeValue>
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

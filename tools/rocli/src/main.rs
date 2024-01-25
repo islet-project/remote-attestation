@@ -46,6 +46,10 @@ enum Commands {
         /// Path to Cpak public PEM
         #[arg(short, long)]
         cpak: Vec<String>,
+
+        /// Type of the provided key
+        #[arg(short, long)]
+        cpak_type: Vec<String>
     },
 
     refvals { },
@@ -66,7 +70,7 @@ fn main() -> Result<(), RocliError> {
     let token = verify_token(read_bytes(cli.token)?.as_slice(), None)?;
 
     let comid = match cli.command {
-        Commands::endorsements { cpak } => make_endorsements(cpak, token, config)?,
+        Commands::endorsements { cpak, cpak_type } => make_endorsements(cpak, cpak_type, token, config)?,
         Commands::refvals { } => make_refvals(token, config)?,
         Commands::corim { } => make_corim(token, config)?
     };

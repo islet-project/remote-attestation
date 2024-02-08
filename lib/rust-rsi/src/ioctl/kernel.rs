@@ -18,7 +18,7 @@ mod internal
 
 pub const MAX_MEASUR_LEN: u16 = 0x40;
 pub const CHALLENGE_LEN:  u16 = 0x40;
-pub const MAX_TOKEN_LEN:  u16 = 0x1000;
+pub const GRANULE_LEN:  u16 = 0x1000;
 
 
 // should be pub(super) but nix leaks the type through pub ioctl definitions
@@ -53,15 +53,15 @@ impl RsiMeasurement
 pub struct RsiAttestation
 {
     pub(super) challenge: [u8; CHALLENGE_LEN as usize],
-    pub(super) token_len: u32,
-    pub(super) token: [u8; MAX_TOKEN_LEN as usize],
+    pub(super) token_len: u64,
+    pub(super) token: *mut u8,
 }
 
 impl RsiAttestation
 {
-    pub(super) fn new(src: &[u8; CHALLENGE_LEN as usize]) -> Self
+    pub(super) fn new(src: &[u8; CHALLENGE_LEN as usize], token_len: u64) -> Self
     {
-        Self { challenge: src.clone(), token_len: 0, token: [0; MAX_TOKEN_LEN as usize] }
+        Self { challenge: src.clone(), token_len, token: std::ptr::null_mut() }
     }
 }
 

@@ -1,6 +1,6 @@
 pub(super) mod kernel;
 
-use nix::{fcntl::OFlag, libc::O_RDWR, sys::stat::Mode};
+use nix::{fcntl::OFlag, libc::O_RDWR, sys::stat::Mode, errno::Errno};
 
 const FLAGS: OFlag = OFlag::from_bits_truncate(O_RDWR);
 const MODE: Mode = Mode::from_bits_truncate(0o644);
@@ -62,10 +62,25 @@ pub fn measurement_extend(index: u32, data: &[u8]) -> nix::Result<()>
     kernel::measurement_extend(fd.get(), &measur)
 }
 
+// Use very small value to make sure the ERANGE case is tested.
+// Optimally a value of 4096 should be used.
+const INITIAL_TOKEN_SIZE: u64 = 64;
+
 pub fn attestation_token(challenge: &[u8; super::CHALLENGE_LEN as usize]) -> nix::Result<Vec<u8>>
 {
-    let mut attest = [kernel::RsiAttestation::new(challenge)];
+    let mut attest = [kernel::RsiAttestation::new(challenge, INITIAL_TOKEN_SIZE)];
+    let mut token = vec![0 as u8; INITIAL_TOKEN_SIZE as usize];
+    attest[0].token = token.as_mut_ptr();
+
     let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
-    kernel::attestation_token(fd.get(), &mut attest)?;
-    Ok(attest[0].token[..(attest[0].token_len as usize)].to_vec())
+    match kernel::attestation_token(fd.get(), &mut attest) {
+        Ok(_) => (),
+        Err(Errno::ERANGE) => {
+            token = vec![0 as u8; attest[0].token_len as usize];
+            attest[0].token = token.as_mut_ptr();
+            kernel::attestation_token(fd.get(), &mut attest)?;
+        },
+        Err(e) => return Err(e),
+    }
+    Ok(token[..(attest[0].token_len as usize)].to_vec())
 }

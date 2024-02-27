@@ -9,7 +9,7 @@ mod internal
 {
     use super::{RsiMeasurement, RsiAttestation};
 
-    nix::ioctl_read!(abi_version, b'x', 190u8, u32);
+    nix::ioctl_read!(abi_version, b'x', 190u8, u64);
     nix::ioctl_readwrite_buf!(measurement_read, b'x', 192u8, RsiMeasurement);
     nix::ioctl_write_buf!(measurement_extend, b'x', 193u8, RsiMeasurement);
     nix::ioctl_readwrite_buf!(attestation_token, b'x', 194u8, RsiAttestation);
@@ -65,17 +65,17 @@ impl RsiAttestation
     }
 }
 
-pub(super) const fn abi_version_get_major(version: u32) -> u32
+pub(super) const fn abi_version_get_major(version: u64) -> u32
 {
-    version >> 16
+    ((version & 0x7FFF0000) >> 16) as u32
 }
 
-pub(super) const fn abi_version_get_minor(version: u32) -> u32
+pub(super) const fn abi_version_get_minor(version: u64) -> u32
 {
-    version & 0xFFFF
+    (version & 0xFFFF) as u32
 }
 
-pub(super) fn abi_version(fd: i32, data: *mut u32) -> nix::Result<()>
+pub(super) fn abi_version(fd: i32, data: *mut u64) -> nix::Result<()>
 {
     unsafe { internal::abi_version(fd, data) }.map(|_| ())
 }

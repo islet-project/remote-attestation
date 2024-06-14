@@ -1,37 +1,34 @@
 use std::{fs::File, io::Read};
 use std::io::BufReader;
-use rustls::{Certificate, PrivateKey, RootCertStore};
+use rustls::{pki_types::{CertificateDer, PrivateKeyDer}, RootCertStore};
 use sha2::{Digest, Sha512};
 
 use crate::error::RaTlsError;
 
-pub(crate) fn load_certificates_from_pem(path: &str) -> std::io::Result<Vec<Certificate>> {
+pub(crate) fn load_certificates_from_pem(path: &str) -> std::io::Result<Vec<CertificateDer<'static>>> {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
-    let certs = rustls_pemfile::certs(&mut reader)?;
 
-    Ok(certs.into_iter().map(Certificate).collect())
+    rustls_pemfile::certs(&mut reader).into_iter().collect()
 }
 
-pub(crate) fn load_private_key_from_file(path: &str) -> Result<PrivateKey, RaTlsError> {
+pub(crate) fn load_private_key_from_file(path: &str) -> Result<PrivateKeyDer<'static>, RaTlsError> {
     let file = File::open(&path)?;
     let mut reader = BufReader::new(file);
-    let mut keys = rustls_pemfile::pkcs8_private_keys(&mut reader)?;
 
-    match keys.len() {
-        0 => Err(RaTlsError::PrivateKeyParsingError(format!("No PKCS8-encoded private key found in {path}"))),
-        1 => Ok(PrivateKey(keys.remove(0))),
-        _ => Err(RaTlsError::PrivateKeyParsingError(format!("More than one PKCS8-encoded private key found in {path}"))),
+    let private_key = rustls_pemfile::private_key(&mut reader)?;
+    match private_key {
+        None => Err(RaTlsError::PrivateKeyParsingError(format!("No PKCS8-encoded private key found in {path}"))),
+        Some(key) => Ok(key),
     }
 }
 
 pub(crate) fn load_root_cert_store(path: impl AsRef<str>) -> Result<RootCertStore, RaTlsError> {
-    let root_ca = load_certificates_from_pem(path.as_ref())?;
+    let der_certs = load_certificates_from_pem(path.as_ref())?;
     let mut root_store = RootCertStore::empty();
 
-    for cert in root_ca.into_iter() {
-        root_store.add(&cert)?;
-    }
+    // Warning emitted on purpose - this should be interpreted
+    let (n, _) = root_store.add_parsable_certificates(der_certs);
 
     Ok(root_store)
 }

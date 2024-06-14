@@ -1,7 +1,12 @@
 use log::{debug, info};
-use rcgen::{CertificateParams, KeyPair, CustomExtension, Certificate as RcgenCert, date_time_ymd, DistinguishedName};
+use rcgen::{CertificateParams, KeyPair, CustomExtension, date_time_ymd, DistinguishedName};
 use rsa::RsaPrivateKey;
-use rustls::{client::ResolvesClientCert, server::ResolvesServerCert, sign::{CertifiedKey, RsaSigningKey}, Certificate, PrivateKey};
+use rustls::{client::ResolvesClientCert,
+             server::ResolvesServerCert,
+             sign::CertifiedKey,
+             crypto::ring::sign::any_supported_type,
+             pki_types::PrivateKeyDer,
+};
 use std::sync::Arc;
 use rand::rngs::OsRng;
 use pkcs8::{EncodePublicKey, EncodePrivateKey};
@@ -9,6 +14,7 @@ use crate::{error::RaTlsError, tools::hash_realm_challenge, config::CCA_TOKEN_X5
 use crate::token_resolver::InternalTokenResolver;
 use base64::{Engine, engine::general_purpose::STANDARD as b64};
 
+#[derive(Debug)]
 pub struct RaTlsCertResolver {
     token_resolver: Arc<dyn InternalTokenResolver>,
     private_key: RsaPrivateKey
@@ -40,29 +46,25 @@ impl RaTlsCertResolver {
 
         let token = self.token_resolver.resolve(&realm_challenge)?;
         let pkcs8_privkey = self.private_key.to_pkcs8_der()?;
-        let privkey = PrivateKey(pkcs8_privkey.to_bytes().to_vec());
+        // We are decoding DER created by RustCrypto,
+        // this has no right to fail.
+        let privkey = PrivateKeyDer::try_from(pkcs8_privkey.as_bytes()).unwrap();
         let mut params = CertificateParams::default();
-        params.key_pair = Some(KeyPair::try_from(pkcs8_privkey.as_bytes())?);
+        let key_pair = KeyPair::try_from(pkcs8_privkey.as_bytes())?;
+
         params.not_before = date_time_ymd(2021, 05, 19);
         params.not_after = date_time_ymd(4096, 01, 01);
         params.distinguished_name = DistinguishedName::new();
 
-        params.alg = &rcgen::PKCS_RSA_SHA256;
         params.custom_extensions.push(CustomExtension::from_oid_content(
             CCA_TOKEN_X509_EXT.as_vec::<u64>()?.as_slice(),
             token
         ));
 
-        let der = RcgenCert::from_params(params)?.serialize_der()?;
-        let cert = Certificate(der);
-        let key = RsaSigningKey::new(&privkey)?;
+        let cert = params.self_signed(&key_pair)?.der().to_owned();
+        let key = any_supported_type(&privkey)?;
 
-        Ok(Arc::new(CertifiedKey {
-            cert: vec![cert],
-            key: Arc::new(key),
-            ocsp: None,
-            sct_list: None
-        }))
+        Ok(Arc::new(CertifiedKey::new(vec![cert], key)))
     }
 }
 

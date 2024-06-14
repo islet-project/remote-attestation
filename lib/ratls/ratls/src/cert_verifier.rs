@@ -1,16 +1,90 @@
 use std::sync::Arc;
-use log::{info, error};
+use log::{error, info};
 use pkcs8::EncodePublicKey;
 use rand::RngCore;
 use base64::{Engine, engine::general_purpose::STANDARD as b64};
 use rust_rsi::{verify_token, print_token, RealmClaims};
+use rustls::pki_types::{ServerName, UnixTime};
 use x509_certificate::X509Certificate;
 use crate::{token_verifier::InternalTokenVerifier, config::CCA_TOKEN_X509_EXT, tools::hash_realm_challenge};
-use rustls::{server::{ClientCertVerifier, ClientCertVerified}, DistinguishedName, client::{ServerCertVerifier, ServerCertVerified}, Certificate, Error};
-
-
+use rustls::{client::danger::{ServerCertVerified, ServerCertVerifier}, crypto::{verify_tls12_signature, verify_tls13_signature, WebPkiSupportedAlgorithms}, pki_types::CertificateDer, server::danger::{ClientCertVerified, ClientCertVerifier}, DistinguishedName, Error, SignatureScheme};
+use webpki::ring as webpki_algs;
 use crate::error::RaTlsError;
 
+// Copied from rustls v0.21 implementation of WebPkiVerifier
+static SUPPORTED_SIG_SCHEMES: [SignatureScheme; 9] = [
+    SignatureScheme::ECDSA_NISTP384_SHA384,
+    SignatureScheme::ECDSA_NISTP256_SHA256,
+    SignatureScheme::ED25519,
+    SignatureScheme::RSA_PSS_SHA512,
+    SignatureScheme::RSA_PSS_SHA384,
+    SignatureScheme::RSA_PSS_SHA256,
+    SignatureScheme::RSA_PKCS1_SHA512,
+    SignatureScheme::RSA_PKCS1_SHA384,
+    SignatureScheme::RSA_PKCS1_SHA256,
+];
+
+// Copied from rustls v0.23 implementation of crypto::ring
+static SUPPORTED_SIG_ALGS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
+    all: &[
+        webpki_algs::ECDSA_P256_SHA256,
+        webpki_algs::ECDSA_P256_SHA384,
+        webpki_algs::ECDSA_P384_SHA256,
+        webpki_algs::ECDSA_P384_SHA384,
+        webpki_algs::ED25519,
+        webpki_algs::RSA_PSS_2048_8192_SHA256_LEGACY_KEY,
+        webpki_algs::RSA_PSS_2048_8192_SHA384_LEGACY_KEY,
+        webpki_algs::RSA_PSS_2048_8192_SHA512_LEGACY_KEY,
+        webpki_algs::RSA_PKCS1_2048_8192_SHA256,
+        webpki_algs::RSA_PKCS1_2048_8192_SHA384,
+        webpki_algs::RSA_PKCS1_2048_8192_SHA512,
+        webpki_algs::RSA_PKCS1_3072_8192_SHA384,
+    ],
+    mapping: &[
+        // Note: for TLS1.2 the curve is not fixed by SignatureScheme. For TLS1.3 it is.
+        (
+            SignatureScheme::ECDSA_NISTP384_SHA384,
+            &[
+                webpki_algs::ECDSA_P384_SHA384,
+                webpki_algs::ECDSA_P256_SHA384,
+            ],
+        ),
+        (
+            SignatureScheme::ECDSA_NISTP256_SHA256,
+            &[
+                webpki_algs::ECDSA_P256_SHA256,
+                webpki_algs::ECDSA_P384_SHA256,
+            ],
+        ),
+        (SignatureScheme::ED25519, &[webpki_algs::ED25519]),
+        (
+            SignatureScheme::RSA_PSS_SHA512,
+            &[webpki_algs::RSA_PSS_2048_8192_SHA512_LEGACY_KEY],
+        ),
+        (
+            SignatureScheme::RSA_PSS_SHA384,
+            &[webpki_algs::RSA_PSS_2048_8192_SHA384_LEGACY_KEY],
+        ),
+        (
+            SignatureScheme::RSA_PSS_SHA256,
+            &[webpki_algs::RSA_PSS_2048_8192_SHA256_LEGACY_KEY],
+        ),
+        (
+            SignatureScheme::RSA_PKCS1_SHA512,
+            &[webpki_algs::RSA_PKCS1_2048_8192_SHA512],
+        ),
+        (
+            SignatureScheme::RSA_PKCS1_SHA384,
+            &[webpki_algs::RSA_PKCS1_2048_8192_SHA384],
+        ),
+        (
+            SignatureScheme::RSA_PKCS1_SHA256,
+            &[webpki_algs::RSA_PKCS1_2048_8192_SHA256],
+        ),
+    ],
+};
+
+#[derive(Debug)]
 pub struct RaTlsCertVeryfier {
     token_verifier: Arc<dyn InternalTokenVerifier>,
     challenge: [u8; 64],
@@ -42,8 +116,8 @@ impl RaTlsCertVeryfier {
         Err(RaTlsError::MissingTokenInCertificate)
     }
 
-    fn verify_cert(&self, cert_der: &Certificate) -> Result<(), RaTlsError> {
-        let cert = X509Certificate::from_der(cert_der.0.clone())?;
+    fn verify_cert(&self, cert_der: &CertificateDer) -> Result<(), RaTlsError> {
+        let cert = X509Certificate::from_der(cert_der.to_vec())?;
         let pubkey = cert.to_public_key_der()?;
         let raw_token = self.fetch_token(&cert)?;
         let token = verify_token(raw_token, None).map_err(|e| {error!("Token verification failed"); e})?;
@@ -68,34 +142,80 @@ impl RaTlsCertVeryfier {
 impl ClientCertVerifier for RaTlsCertVeryfier {
     fn verify_client_cert(
             &self,
-            end_entity: &rustls::Certificate,
-            _intermediates: &[rustls::Certificate],
-            _now: std::time::SystemTime,
-        ) -> Result<rustls::server::ClientCertVerified, rustls::Error> {
+            end_entity: &CertificateDer<'_>,
+            _intermediates: &[CertificateDer<'_>],
+            _now: UnixTime,
+        ) -> Result<ClientCertVerified, rustls::Error> {
         match self.verify_cert(end_entity) {
             Ok(()) => Ok(ClientCertVerified::assertion()),
-            Err(err) => Err(Error::InvalidCertificate(rustls::CertificateError::Other(Arc::new(err))))
+            Err(err) => Err(Error::InvalidCertificate(rustls::CertificateError::Other(rustls::OtherError(Arc::new(err)))))
         }
     }
 
-    fn client_auth_root_subjects(&self) -> &[rustls::DistinguishedName] {
+    fn verify_tls12_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &rustls::DigitallySignedStruct,
+    ) -> Result<rustls::client::danger::HandshakeSignatureValid, Error> {
+        verify_tls12_signature(message, cert, dss, &SUPPORTED_SIG_ALGS)
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &rustls::DigitallySignedStruct,
+    ) -> Result<rustls::client::danger::HandshakeSignatureValid, Error> {
+        verify_tls13_signature(
+            message, cert, dss,
+            &SUPPORTED_SIG_ALGS
+        )
+    }
+
+    fn root_hint_subjects(&self) -> &[rustls::DistinguishedName] {
         &self.root_subjects
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
+        SUPPORTED_SIG_SCHEMES.to_vec()
     }
 }
 
 impl ServerCertVerifier for RaTlsCertVeryfier {
     fn verify_server_cert(
             &self,
-            end_entity: &rustls::Certificate,
-            _intermediates: &[rustls::Certificate],
-            _server_name: &rustls::ServerName,
-            _scts: &mut dyn Iterator<Item = &[u8]>,
+            end_entity: &CertificateDer<'_>,
+            _intermediates: &[CertificateDer<'_>],
+            _server_name: &ServerName,
             _ocsp_response: &[u8],
-            _now: std::time::SystemTime,
-        ) -> Result<rustls::client::ServerCertVerified, rustls::Error> {
+            _now: UnixTime,
+        ) -> Result<ServerCertVerified, rustls::Error> {
         match self.verify_cert(end_entity) {
             Ok(()) => Ok(ServerCertVerified::assertion()),
-            Err(err) => Err(Error::InvalidCertificate(rustls::CertificateError::Other(Arc::new(err))))
+            Err(err) => Err(Error::InvalidCertificate(rustls::CertificateError::Other(rustls::OtherError(Arc::new(err)))))
         }
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &rustls::DigitallySignedStruct,
+    ) -> Result<rustls::client::danger::HandshakeSignatureValid, Error> {
+        verify_tls12_signature(message, cert, dss, &SUPPORTED_SIG_ALGS)
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        message: &[u8],
+        cert: &CertificateDer<'_>,
+        dss: &rustls::DigitallySignedStruct,
+    ) -> Result<rustls::client::danger::HandshakeSignatureValid, Error> {
+        verify_tls13_signature(message, cert, dss, &SUPPORTED_SIG_ALGS)
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+        SUPPORTED_SIG_SCHEMES.to_vec()
     }
 }

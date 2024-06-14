@@ -7,6 +7,7 @@ use base64::{Engine, engine::general_purpose::STANDARD as b64};
 use ratls::{InternalTokenVerifier, RaTlsError};
 use rust_rsi::{verify_token, RealmClaims};
 
+#[derive(Debug)]
 pub struct VeraisonTokenVerifer {
     host: String,
     client: Client,

@@ -3,8 +3,7 @@ use std::fmt::Display;
 use std::string::FromUtf8Error;
 use base64::DecodeError;
 use rust_rsi::TokenError;
-use rustls::client::InvalidDnsNameError;
-use rustls::sign::SignError;
+use rustls::pki_types::InvalidDnsNameError;
 use x509_certificate::X509CertificateError;
 
 #[derive(Debug)]
@@ -23,7 +22,6 @@ pub enum RaTlsError {
     RcgenError(rcgen::Error),
     Asn1DecodeError(simple_asn1::ASN1DecodeErr),
     Asn1EncodeError(simple_asn1::ASN1EncodeErr),
-    CertSignError(SignError),
     CertParsingError(X509CertificateError),
     MissingTokenInCertificate,
     CannotExtractTokenFromExtension,
@@ -99,12 +97,6 @@ impl From<simple_asn1::ASN1DecodeErr> for RaTlsError {
 impl From<simple_asn1::ASN1EncodeErr> for RaTlsError {
     fn from(value: simple_asn1::ASN1EncodeErr) -> Self {
         Self::Asn1EncodeError(value)
-    }
-}
-
-impl From<SignError> for RaTlsError {
-    fn from(value: SignError) -> Self {
-        Self::CertSignError(value)
     }
 }
 

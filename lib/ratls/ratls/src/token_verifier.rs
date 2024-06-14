@@ -1,11 +1,12 @@
-use std::sync::Arc;
-
+use std::{fmt::Debug, sync::Arc};
+use log::error;
 use crate::error::RaTlsError;
 
-pub trait InternalTokenVerifier: Send + Sync {
+pub trait InternalTokenVerifier: Debug + Send + Sync {
     fn verify(&self, token: &[u8]) -> Result<(), RaTlsError>;
 }
 
+#[derive(Debug)]
 pub struct SkipVerification;
 
 impl InternalTokenVerifier for SkipVerification {
@@ -14,6 +15,7 @@ impl InternalTokenVerifier for SkipVerification {
     }
 }
 
+#[derive(Debug)]
 pub struct ChainVerifier {
     verifiers: Vec<Arc<dyn InternalTokenVerifier>>
 }
@@ -28,7 +30,7 @@ impl ChainVerifier {
 impl InternalTokenVerifier for ChainVerifier {
     fn verify(&self, cert: &[u8]) -> Result<(), RaTlsError> {
         for verifier in self.verifiers.iter() {
-            verifier.verify(cert)?;
+            verifier.verify(cert).inspect_err(|e| error!("Verification failed: {:?}", e))?;
         }
 
         Ok(())

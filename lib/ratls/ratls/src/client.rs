@@ -1,5 +1,5 @@
 use std::{net::TcpStream, sync::Arc};
-use rustls::{ClientConnection, ClientConfig, server::DnsName};
+use rustls::{crypto::ring::default_provider, pki_types::{DnsName, ServerName}, ClientConfig, ClientConnection};
 use crate::{cert_resolver::RaTlsCertResolver, cert_verifier::RaTlsCertVeryfier,
     error::RaTlsError, tools::{load_certificates_from_pem, load_private_key_from_file, load_root_cert_store}};
 use crate::connection::RaTlsConnection;
@@ -33,10 +33,10 @@ impl RaTlsClient {
     }
 
     fn make_client_config(&self) -> Result<(ClientConfig, Option<String>), RaTlsError> {
+        default_provider().install_default().expect("Failed to install CryptoProvider");
         match &self.mode {
             ClientMode::AttestedClient { client_token_resolver, root_ca_path } => {
                 Ok((ClientConfig::builder()
-                        .with_safe_defaults()
                         .with_root_certificates(load_root_cert_store(root_ca_path)?)
                         .with_client_cert_resolver(Arc::new(RaTlsCertResolver::from_token_resolver(client_token_resolver.clone())?)),
                     None
@@ -46,7 +46,7 @@ impl RaTlsClient {
                 let verifier = RaTlsCertVeryfier::from_token_verifier(server_token_verifier.clone());
                 let chall = verifier.b64_challenge();
                 Ok((ClientConfig::builder()
-                    .with_safe_defaults()
+                    .dangerous()
                     .with_custom_certificate_verifier(Arc::new(verifier))
                     .with_client_auth_cert(
                         load_certificates_from_pem(&client_certificate_path)?,
@@ -59,9 +59,9 @@ impl RaTlsClient {
                 let verifier = RaTlsCertVeryfier::from_token_verifier(server_token_verifier.clone());
                 let chall = verifier.b64_challenge();
                 Ok((ClientConfig::builder()
-                        .with_safe_defaults()
-                        .with_custom_certificate_verifier(Arc::new(verifier))
-                        .with_client_cert_resolver(Arc::new(RaTlsCertResolver::from_token_resolver(client_token_resolver.clone())?)),
+                    .dangerous()
+                    .with_custom_certificate_verifier(Arc::new(verifier))
+                    .with_client_cert_resolver(Arc::new(RaTlsCertResolver::from_token_resolver(client_token_resolver.clone())?)),
                     Some(chall)
                 ))
             }
@@ -73,7 +73,7 @@ impl RaTlsClient {
         let (config, challenge) = self.make_client_config()?;
         let conn = ClientConnection::new(
             Arc::new(config),
-            rustls::ServerName::DnsName(DnsName::try_from(challenge.unwrap_or(server_name))?)
+            ServerName::DnsName(DnsName::try_from(challenge.unwrap_or(server_name))?)
         )?;
 
         let mut tlsconn = RaTlsConnection::new(sock, conn);
@@ -99,5 +99,3 @@ impl RaTlsClient {
         }
     }
 }
-
-

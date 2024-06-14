@@ -1,9 +1,12 @@
+use std::fmt::Debug;
+
 use crate::{error::RaTlsError, tools::read_file};
 
-pub trait InternalTokenResolver: Send + Sync {
+pub trait InternalTokenResolver: Debug + Send + Sync {
     fn resolve(&self, challenge: &[u8]) -> Result<Vec<u8>, RaTlsError>;
 }
 
+#[derive(Debug)]
 pub struct TokenFromFile(Vec<u8>);
 
 impl TokenFromFile {

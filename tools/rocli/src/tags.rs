@@ -165,8 +165,8 @@ pub(crate) struct Comid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub(crate) enum Output {
-    comid(Comid),
-    corim(Corim)
+    Comid(Comid),
+    Corim(Corim)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

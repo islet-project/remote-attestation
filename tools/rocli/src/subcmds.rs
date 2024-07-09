@@ -1,6 +1,6 @@
 use rust_rsi::{AttestationClaims, PlatClaims, PlatSwComponent};
 use crate::tags::{Comid, Environment, AttesterVerificationKeys,
-    VerificationKey, Triples, Config, ReferenceValue, Corim, Output, Measurement, TypeValue};
+    Triples, Config, ReferenceValue, Corim, Output, Measurement, TypeValue};
 use crate::tools::read_string;
 use crate::error::RocliError;
 
@@ -18,7 +18,7 @@ pub(crate) fn make_endorsements(cpak: Vec<String>, cpak_type: Vec<String>, token
         envir.extend_from_config(env);
     }
 
-    Ok(Output::comid(Comid {
+    Ok(Output::Comid(Comid {
         lang: config.lang,
         tag_identity: config.tag_identity,
         entities: config.entities.into_iter().map(|i| i.to_comid_entity()).collect(),
@@ -48,7 +48,7 @@ pub(crate) fn make_refvals(token: AttestationClaims, config: Config) -> Result<O
         envir.extend_from_config(env);
     }
 
-    Ok(Output::comid(Comid {
+    Ok(Output::Comid(Comid {
         lang: config.lang,
         tag_identity: config.tag_identity,
         entities: config.entities.into_iter().map(|i| i.to_comid_entity()).collect(),
@@ -69,7 +69,7 @@ pub(crate) fn make_corim(token: AttestationClaims, config: Config) -> Result<Out
         return Err(RocliError::ProfileNotAllowed(plat_claims.profile))
     }
 
-    Ok(Output::corim(Corim {
+    Ok(Output::Corim(Corim {
         corim_id: config.tag_identity.id,
         profiles: vec![plat_claims.profile],
         validity: config.validity,

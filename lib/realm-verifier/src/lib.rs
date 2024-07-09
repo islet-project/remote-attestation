@@ -15,6 +15,7 @@ pub struct RealmMeasurements {
     pub extensible: Vec<[MeasurementValue; CLAIM_COUNT_REALM_EXTENSIBLE_MEASUREMENTS]>,
 }
 
+#[derive(Debug)]
 pub struct RealmVerifier {
     reference_measurements: RealmMeasurements,
 }

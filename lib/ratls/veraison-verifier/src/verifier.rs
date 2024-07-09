@@ -16,9 +16,15 @@ pub struct VeraisonTokenVerifer {
 
 impl VeraisonTokenVerifer {
     pub fn new(host: impl Into<String>, pubkey: impl Into<String>) -> Self {
+        let client = std::thread::scope(|s| {
+            s.spawn(move || {
+                Client::new()
+            }).join().expect("Thread failed")
+        });
+
         Self {
             host: host.into(),
-            client: Client::new(),
+            client,
             pubkey: pubkey.into()
         }
     }
@@ -83,8 +89,13 @@ impl VeraisonTokenVerifer {
         self.verify_attestation_results(verification_results.result)
     }
 }
+
 impl InternalTokenVerifier for VeraisonTokenVerifer {
     fn verify(&self, token: &[u8]) -> Result<(), RaTlsError> {
-        self.verify_token(token).map_err(|err| err.into())
+        std::thread::scope(|s| {
+            s.spawn(move || {
+                self.verify_token(token).map_err(|err| err.into())
+            }).join().expect("Thread failed")
+        })
     }
 }

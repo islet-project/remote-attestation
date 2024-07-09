@@ -23,6 +23,7 @@ pub use token_verifier::InternalTokenVerifier;
 pub use token_verifier::SkipVerification;
 pub use token_verifier::ChainVerifier;
 
+pub use cert_resolver::RaTlsCertResolver;
+pub use cert_verifier::RaTlsCertVeryfier;
+
 pub use tools::init_logger;
-
-

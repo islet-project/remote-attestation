@@ -1,5 +1,3 @@
-#![feature(if_let_guard, let_chains)]
-
 extern crate base64;
 extern crate rand;
 
@@ -42,7 +40,7 @@ struct Args {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    endorsements {
+    Endorsements {
         /// Path to Cpak public PEM
         #[arg(short, long)]
         cpak: Vec<String>,
@@ -52,9 +50,9 @@ enum Commands {
         cpak_type: Vec<String>
     },
 
-    refvals { },
+    Refvals { },
 
-    corim {}
+    Corim {}
 }
 
 fn main() -> Result<(), RocliError> {
@@ -70,9 +68,9 @@ fn main() -> Result<(), RocliError> {
     let token = verify_token(read_bytes(cli.token)?.as_slice(), None)?;
 
     let comid = match cli.command {
-        Commands::endorsements { cpak, cpak_type } => make_endorsements(cpak, cpak_type, token, config)?,
-        Commands::refvals { } => make_refvals(token, config)?,
-        Commands::corim { } => make_corim(token, config)?
+        Commands::Endorsements { cpak, cpak_type } => make_endorsements(cpak, cpak_type, token, config)?,
+        Commands::Refvals { } => make_refvals(token, config)?,
+        Commands::Corim { } => make_corim(token, config)?
     };
 
     if let Some(path) = cli.output {

@@ -10,7 +10,6 @@ use rust_rsi::{verify_token, RealmClaims};
 #[derive(Debug)]
 pub struct VeraisonTokenVerifer {
     host: String,
-    client: Client,
     pubkey: String
 }
 
@@ -18,7 +17,6 @@ impl VeraisonTokenVerifer {
     pub fn new(host: impl Into<String>, pubkey: impl Into<String>) -> Self {
         Self {
             host: host.into(),
-            client: Client::new(),
             pubkey: pubkey.into()
         }
     }
@@ -40,11 +38,11 @@ impl VeraisonTokenVerifer {
         Ok(())
     }
 
-    fn verify_token(&self, token: &[u8]) -> Result<(), VeraisonTokenVeriferError> {
+    fn verify_token(&self, client: Client, token: &[u8]) -> Result<(), VeraisonTokenVeriferError> {
         let token_claims = verify_token(token, None)?;
         let realm_claims = RealmClaims::from_raw_claims(&token_claims.realm_claims.token_claims, &token_claims.realm_claims.measurement_claims)?;
 
-        let response = self.client.post(self.host.clone() + "/challenge-response/v1/newSession")
+        let response = client.post(self.host.clone() + "/challenge-response/v1/newSession")
             .header("Accept", "application/vnd.veraison.challenge-response-session+json")
             .query(&[("nonce", b64.encode(realm_claims.challenge))])
             .send()?;
@@ -66,7 +64,7 @@ impl VeraisonTokenVerifer {
 
         let session_path = next_location.to_str().map_err(|_| VeraisonTokenVeriferError::LocationHeaderIsNotAString)?;
 
-        let verification_results = self.client.post(self.host.clone() + "/challenge-response/v1/" + session_path)
+        let verification_results = client.post(self.host.clone() + "/challenge-response/v1/" + session_path)
             .header("Accept", "application/vnd.veraison.challenge-response-session+json")
             .header("Content-Type", "application/eat-collection; profile=http://arm.com/CCA-SSD/1.0.0")
             .body(token.to_owned())
@@ -75,7 +73,7 @@ impl VeraisonTokenVerifer {
 
         info!("Got verification results from Veraison");
 
-        self.client.delete(self.host.clone() + "/challenge-response/v1/" + session_path)
+        client.delete(self.host.clone() + "/challenge-response/v1/" + session_path)
             .send()?;
 
         info!("Session {} deleted", session.nonce);
@@ -83,8 +81,14 @@ impl VeraisonTokenVerifer {
         self.verify_attestation_results(verification_results.result)
     }
 }
+
 impl InternalTokenVerifier for VeraisonTokenVerifer {
     fn verify(&self, token: &[u8]) -> Result<(), RaTlsError> {
-        self.verify_token(token).map_err(|err| err.into())
+        std::thread::scope(|s| {
+            s.spawn(move || {
+                let client = Client::new();
+                self.verify_token(client, token).map_err(|err| err.into())
+            }).join().expect("Thread failed")
+        })
     }
 }

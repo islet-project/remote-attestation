@@ -27,8 +27,8 @@ pub(crate) fn load_root_cert_store(path: impl AsRef<str>) -> Result<RootCertStor
     let der_certs = load_certificates_from_pem(path.as_ref())?;
     let mut root_store = RootCertStore::empty();
 
-    // Warning emitted on purpose - this should be interpreted
-    let (n, _) = root_store.add_parsable_certificates(der_certs);
+    // NOTE: this probably should be interpreted
+    let _ = root_store.add_parsable_certificates(der_certs);
 
     Ok(root_store)
 }

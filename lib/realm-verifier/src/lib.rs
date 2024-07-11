@@ -1,5 +1,7 @@
-pub mod parser;
+mod parser;
+
 pub mod hash;
+pub use parser::json as parser_json;
 
 use log::{debug, error};
 use ratls::{InternalTokenVerifier, RaTlsError};

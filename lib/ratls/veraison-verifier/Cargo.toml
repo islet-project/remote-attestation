@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 log = "*"
 ratls = { path = "../ratls" }
-reqwest = { version = "*", features = ["blocking", "json"] }
+reqwest = { version = "*", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 serde = { version = "*", features = ["derive", "alloc"] }
 serde_json = { version = "*", features = ["alloc"] }
 ear = { git = "https://github.com/veraison/rust-ear" }

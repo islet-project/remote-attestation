@@ -125,3 +125,29 @@ impl InternalTokenVerifier for RealmVerifier {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{fs::File, io::{BufReader, Read}};
+    use super::*;
+
+    #[test]
+    fn verify_token() {
+        let mut token = Vec::<u8>::with_capacity(128);
+        File::open("tests/token.bin").unwrap().read_to_end(&mut token).unwrap();
+        token.shrink_to_fit();
+
+        let file = File::open("tests/realm.json").unwrap();
+        let reader = BufReader::new(file);
+
+        let reference_json: serde_json::Value = serde_json::from_reader(reader).unwrap();
+        let reference_values_json = reference_json["realm"]["reference-values"].clone();
+
+        let reference_values = crate::parser_json::parse_value(reference_values_json).unwrap();
+        let verifier = RealmVerifier::init(reference_values);
+
+        let verification_result = verifier.verify(&token);
+
+        verification_result.unwrap();
+    }
+}

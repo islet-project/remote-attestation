@@ -78,3 +78,74 @@ pub fn parse_value(value: serde_json::Value) -> Result<RealmMeasurements, &'stat
     };
     RealmMeasurements::try_from(reference_values)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{fs::File, io::BufReader};
+
+    use super::*;
+
+    fn gen_value(
+        rim: &String,
+        rems: &Vec<Vec<String>>,
+        hash_algo: &String) -> serde_json::Value
+    {
+
+        let value = serde_json::json!({
+            REFERENCE_RIM: rim,
+            REFERENCE_REMS: rems,
+            REFERENCE_HASH_ALGO: hash_algo,
+        });
+
+        value
+    }
+
+    fn get_value() -> serde_json::Value {
+        let file = File::open("tests/example.json").unwrap();
+        let reader = BufReader::new(file);
+
+        let u: serde_json::Value = serde_json::from_reader(reader).unwrap();
+        let value = u["realm"]["reference-values"].clone();
+
+        value
+    }
+
+    #[test]
+    fn good_json_gen() {
+        let rim = "fdd82b3e2ef1da0091a3a9ce22549c4258265968d9c6487ea9886664b94a9b61".to_string();
+        let rems = [
+            [
+                hex::encode([0u8; 32]),
+                hex::encode([1u8; 32]),
+                hex::encode([2u8; 32]),
+                hex::encode([3u8; 32]),
+            ].to_vec()
+        ].to_vec();
+        let hash_algo = "sha-256".to_string();
+
+        let good_value = gen_value(&rim, &rems, &hash_algo);
+
+        let result = parse_value(good_value);
+        result.unwrap();
+    }
+
+    #[test]
+    fn good_json_file() {
+        let good_value = get_value();
+
+        let result = parse_value(good_value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn empty_rems() {
+        let bad_value = gen_value(
+            &"fdd82b3e2ef1da0091a3a9ce22549c4258265968d9c6487ea9886664b94a9b61".to_string(),
+            &Vec::new(),
+            &"sha-256".to_string()
+        );
+
+        let result = parse_value(bad_value);
+        assert_eq!(result.err().unwrap(), "No reference REMs");
+    }
+}

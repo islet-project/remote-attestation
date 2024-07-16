@@ -27,3 +27,4 @@ pub use cert_resolver::RaTlsCertResolver;
 pub use cert_verifier::RaTlsCertVeryfier;
 
 pub use tools::init_logger;
+pub use tools::load_root_cert_store;

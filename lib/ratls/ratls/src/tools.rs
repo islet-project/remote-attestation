@@ -23,7 +23,7 @@ pub(crate) fn load_private_key_from_file(path: &str) -> Result<PrivateKeyDer<'st
     }
 }
 
-pub(crate) fn load_root_cert_store(path: impl AsRef<str>) -> Result<RootCertStore, RaTlsError> {
+pub fn load_root_cert_store(path: impl AsRef<str>) -> Result<RootCertStore, RaTlsError> {
     let der_certs = load_certificates_from_pem(path.as_ref())?;
     let mut root_store = RootCertStore::empty();
 

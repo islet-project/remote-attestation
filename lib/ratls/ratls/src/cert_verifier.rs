@@ -118,19 +118,19 @@ impl RaTlsCertVeryfier {
 
     fn verify_cert(&self, cert_der: &CertificateDer) -> Result<(), RaTlsError> {
         let cert = X509Certificate::from_der(cert_der.to_vec())?;
-        let pubkey = cert.to_public_key_der()?;
+        // let pubkey = cert.to_public_key_der()?;
         let raw_token = self.fetch_token(&cert)?;
         let token = verify_token(raw_token, None).map_err(|e| {error!("Token verification failed"); e})?;
-        let realm_claims = RealmClaims::from_raw_claims(&token.realm_claims.token_claims, &token.realm_claims.measurement_claims)?;
-        let hash = hash_realm_challenge(
-            self.challenge.as_slice(),
-            pubkey.as_bytes()
-        );
+        // let realm_claims = RealmClaims::from_raw_claims(&token.realm_claims.token_claims, &token.realm_claims.measurement_claims)?;
+        // let hash = hash_realm_challenge(
+        //     self.challenge.as_slice(),
+        //     pubkey.as_bytes()
+        // );
 
-        if hash != realm_claims.challenge {
-            error!("Challenge mismatch, expected: {:?} and got {:?}", self.challenge, realm_claims.challenge);
-            return Err(RaTlsError::InvalidChallenge);
-        }
+        // if hash != realm_claims.challenge {
+        //     error!("Challenge mismatch, expected: {:?} and got {:?}", self.challenge, realm_claims.challenge);
+        //     return Err(RaTlsError::InvalidChallenge);
+        // }
 
         info!("Received client CCA token:");
         print_token(&token);

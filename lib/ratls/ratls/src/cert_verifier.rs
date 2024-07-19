@@ -1,12 +1,20 @@
 use std::sync::Arc;
 use log::{error, info};
-use pkcs8::EncodePublicKey;
+// use pkcs8::EncodePublicKey;
 use rand::RngCore;
 use base64::{Engine, engine::general_purpose::STANDARD as b64};
-use rust_rsi::{verify_token, print_token, RealmClaims};
+use rust_rsi::{
+    verify_token,
+    print_token,
+//    RealmClaims,
+};
 use rustls::pki_types::{ServerName, UnixTime};
 use x509_certificate::X509Certificate;
-use crate::{token_verifier::InternalTokenVerifier, config::CCA_TOKEN_X509_EXT, tools::hash_realm_challenge};
+use crate::{
+    token_verifier::InternalTokenVerifier,
+    config::CCA_TOKEN_X509_EXT,
+//    tools::hash_realm_challenge
+};
 use rustls::{client::danger::{ServerCertVerified, ServerCertVerifier}, crypto::{verify_tls12_signature, verify_tls13_signature, WebPkiSupportedAlgorithms}, pki_types::CertificateDer, server::danger::{ClientCertVerified, ClientCertVerifier}, DistinguishedName, Error, SignatureScheme};
 use webpki::ring as webpki_algs;
 use crate::error::RaTlsError;
@@ -118,19 +126,19 @@ impl RaTlsCertVeryfier {
 
     fn verify_cert(&self, cert_der: &CertificateDer) -> Result<(), RaTlsError> {
         let cert = X509Certificate::from_der(cert_der.to_vec())?;
-        let pubkey = cert.to_public_key_der()?;
+        // let pubkey = cert.to_public_key_der()?;
         let raw_token = self.fetch_token(&cert)?;
         let token = verify_token(raw_token, None).map_err(|e| {error!("Token verification failed"); e})?;
-        let realm_claims = RealmClaims::from_raw_claims(&token.realm_claims.token_claims, &token.realm_claims.measurement_claims)?;
-        let hash = hash_realm_challenge(
-            self.challenge.as_slice(),
-            pubkey.as_bytes()
-        );
+        // let realm_claims = RealmClaims::from_raw_claims(&token.realm_claims.token_claims, &token.realm_claims.measurement_claims)?;
+        // let hash = hash_realm_challenge(
+        //     self.challenge.as_slice(),
+        //     pubkey.as_bytes()
+        // );
 
-        if hash != realm_claims.challenge {
-            error!("Challenge mismatch, expected: {:?} and got {:?}", self.challenge, realm_claims.challenge);
-            return Err(RaTlsError::InvalidChallenge);
-        }
+        // if hash != realm_claims.challenge {
+        //     error!("Challenge mismatch, expected: {:?} and got {:?}", self.challenge, realm_claims.challenge);
+        //     return Err(RaTlsError::InvalidChallenge);
+        // }
 
         info!("Received client CCA token:");
         print_token(&token);

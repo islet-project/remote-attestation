@@ -1,7 +1,6 @@
 use crate::tools::{self, hexdump};
 use clap::{Args, ValueEnum};
 
-
 pub(crate) type GenericResult = Result<(), Box<dyn std::error::Error>>;
 
 pub(crate) fn version() -> GenericResult
@@ -156,7 +155,8 @@ pub(crate) fn verify_platform(args: &VerifyPlatformArgs) -> GenericResult
 }
 
 #[derive(ValueEnum, Debug, Copy, Clone)]
-pub(crate) enum SealingKeyFlags {
+pub(crate) enum SealingKeyFlags
+{
     /// Use VHUK_B insted of VHUK_A
     Key,
 
@@ -176,7 +176,7 @@ pub(crate) struct SealingKey
 
     /// Use Security Version Number as key material
     #[arg(short, long)]
-    svn: Option<u64>
+    svn: Option<u64>,
 }
 pub(crate) fn sealing_key(args: &SealingKey) -> GenericResult
 {

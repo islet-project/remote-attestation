@@ -1,9 +1,12 @@
 use rand::{distributions::Standard, Rng};
+use rust_rsi::{
+    RSI_SEALING_KEY_FLAGS_KEY, RSI_SEALING_KEY_FLAGS_REALM_ID, RSI_SEALING_KEY_FLAGS_RIM,
+    RSI_SEALING_KEY_FLAGS_SVN,
+};
 use std::{
     fs::File,
     io::{Read, Write},
 };
-use rust_rsi::{RSI_SEALING_KEY_FLAGS_KEY, RSI_SEALING_KEY_FLAGS_REALM_ID, RSI_SEALING_KEY_FLAGS_RIM, RSI_SEALING_KEY_FLAGS_SVN};
 
 use crate::subcmds::SealingKeyFlags;
 
@@ -53,24 +56,28 @@ pub(crate) fn verify_print_platform(token: &[u8], key: &[u8]) -> Result<(), rust
     Ok(())
 }
 
-impl From<&SealingKeyFlags> for u64 {
-    fn from(value: &SealingKeyFlags) -> Self {
+impl From<&SealingKeyFlags> for u64
+{
+    fn from(value: &SealingKeyFlags) -> Self
+    {
         match value {
             SealingKeyFlags::Key => RSI_SEALING_KEY_FLAGS_KEY,
             SealingKeyFlags::Rim => RSI_SEALING_KEY_FLAGS_RIM,
-            SealingKeyFlags::RealmId => RSI_SEALING_KEY_FLAGS_REALM_ID
+            SealingKeyFlags::RealmId => RSI_SEALING_KEY_FLAGS_REALM_ID,
         }
     }
 }
 
-pub(crate) fn read_sealing_key(flags: &Vec<SealingKeyFlags>, svn: Option<u64>) -> Result<[u8; 32], rust_rsi::NixError>
+pub(crate) fn read_sealing_key(
+    flags: &Vec<SealingKeyFlags>,
+    svn: Option<u64>,
+) -> Result<[u8; 32], rust_rsi::NixError>
 {
-    let flags = flags.iter()
-        .fold(0u64, |a, b| a | u64::from(b));
+    let flags = flags.iter().fold(0u64, |a, b| a | u64::from(b));
 
     let (flags, svn) = match svn {
         Some(svn) => (flags | RSI_SEALING_KEY_FLAGS_SVN, svn),
-        None => (flags, 0u64)
+        None => (flags, 0u64),
     };
 
     rust_rsi::sealing_key(flags, svn)

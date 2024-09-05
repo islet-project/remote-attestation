@@ -26,6 +26,8 @@ enum Commands
     Verify(subcmds::VerifyArgs),
     /// Verifies and prints the platform token from a file
     VerifyPlatform(subcmds::VerifyPlatformArgs),
+    /// Fetch sealing key material
+    SealingKey(subcmds::SealingKey)
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>>
@@ -39,6 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
         Commands::Attest(args) => subcmds::attest(args)?,
         Commands::Verify(args) => subcmds::verify(args)?,
         Commands::VerifyPlatform(args) => subcmds::verify_platform(args)?,
+        Commands::SealingKey(args) => subcmds::sealing_key(args)?
     };
 
     Ok(())

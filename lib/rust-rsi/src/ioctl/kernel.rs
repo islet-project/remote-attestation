@@ -7,12 +7,13 @@
 
 mod internal
 {
-    use super::{RsiMeasurement, RsiAttestation};
+    use super::{RsiMeasurement, RsiAttestation, RsiSealingKey};
 
     nix::ioctl_read!(abi_version, b'x', 190u8, u64);
     nix::ioctl_readwrite_buf!(measurement_read, b'x', 192u8, RsiMeasurement);
     nix::ioctl_write_buf!(measurement_extend, b'x', 193u8, RsiMeasurement);
     nix::ioctl_readwrite_buf!(attestation_token, b'x', 194u8, RsiAttestation);
+    nix::ioctl_readwrite_buf!(sealing_key, b'x', 195u8, RsiSealingKey);
 }
 
 
@@ -65,6 +66,27 @@ impl RsiAttestation
     }
 }
 
+pub const RSI_SEALING_KEY_FLAGS_KEY:      u64 = 1 << 0;
+pub const RSI_SEALING_KEY_FLAGS_RIM:      u64 = 1 << 1;
+pub const RSI_SEALING_KEY_FLAGS_REALM_ID: u64 = 1 << 2;
+pub const RSI_SEALING_KEY_FLAGS_SVN:      u64 = 1 << 3;
+pub(super) const RSI_SEALING_KEY_FLAGS_MASK:     u64 = 0x0F;
+
+#[repr(C)]
+pub struct RsiSealingKey
+{
+    pub(super) flags: u64,
+    pub(super) svn: u64,
+    pub(super) realm_sealing_key: [u8; 32]
+}
+
+impl RsiSealingKey {
+    pub(super) fn new(flags: u64, svn: u64) -> Self
+    {
+        Self { flags: flags & RSI_SEALING_KEY_FLAGS_MASK, svn, realm_sealing_key: [0u8; 32] }
+    }
+}
+
 pub(super) const fn abi_version_get_major(version: u64) -> u32
 {
     ((version & 0x7FFF0000) >> 16) as u32
@@ -93,4 +115,9 @@ pub(super) fn measurement_extend(fd: i32, data: &[RsiMeasurement]) -> nix::Resul
 pub(super) fn attestation_token(fd: i32, data: &mut [RsiAttestation]) -> nix::Result<()>
 {
     unsafe { internal::attestation_token(fd, data) }.map(|_| ())
+}
+
+pub(super) fn sealing_key(fd: i32, data: &mut [RsiSealingKey]) -> nix::Result<()>
+{
+    unsafe { internal::sealing_key(fd, data) }.map(|_| ())
 }

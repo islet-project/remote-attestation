@@ -84,3 +84,11 @@ pub fn attestation_token(challenge: &[u8; super::CHALLENGE_LEN as usize]) -> nix
     }
     Ok(token[..(attest[0].token_len as usize)].to_vec())
 }
+
+pub fn sealing_key(flags: u64, svn: u64) -> nix::Result<[u8; 32]>
+{
+    let mut sealing = [kernel::RsiSealingKey::new(flags, svn)];
+    let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
+    kernel::sealing_key(fd.get(), &mut sealing)?;
+    Ok(sealing[0].realm_sealing_key)
+}

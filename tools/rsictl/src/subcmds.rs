@@ -1,6 +1,5 @@
-use crate::tools;
-use clap::Args;
-
+use crate::tools::{self, hexdump};
+use clap::{Args, ValueEnum};
 
 pub(crate) type GenericResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -152,5 +151,37 @@ pub(crate) fn verify_platform(args: &VerifyPlatformArgs) -> GenericResult
     let token = tools::file_read(&args.input)?;
     let key = tools::file_read(&args.key)?;
     tools::verify_print_platform(&token, &key)?;
+    Ok(())
+}
+
+#[derive(ValueEnum, Debug, Copy, Clone)]
+pub(crate) enum SealingKeyFlags
+{
+    /// Use VHUK_B insted of VHUK_A
+    Key,
+
+    /// Use RIM to calculate key material
+    Rim,
+
+    /// Use Realm ID to calculate key material
+    RealmId,
+}
+
+#[derive(Args, Debug)]
+pub(crate) struct SealingKey
+{
+    /// Flags altering source material for sealing key derivation
+    #[arg(short, long, value_enum, action = clap::ArgAction::Append)]
+    flags: Vec<SealingKeyFlags>,
+
+    /// Use Security Version Number as key material
+    #[arg(short, long)]
+    svn: Option<u64>,
+}
+pub(crate) fn sealing_key(args: &SealingKey) -> GenericResult
+{
+    let key_material = tools::read_sealing_key(&args.flags, args.svn)?;
+    hexdump(key_material.as_slice(), 16, Some("Generated key material"));
+
     Ok(())
 }

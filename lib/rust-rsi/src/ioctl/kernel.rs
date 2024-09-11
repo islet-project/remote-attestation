@@ -9,11 +9,12 @@ mod internal
 {
     use super::{RsiMeasurement, RsiAttestation, RsiSealingKey};
 
+    // TODO: These should be hex
     nix::ioctl_read!(abi_version, b'x', 190u8, u64);
     nix::ioctl_readwrite_buf!(measurement_read, b'x', 192u8, RsiMeasurement);
     nix::ioctl_write_buf!(measurement_extend, b'x', 193u8, RsiMeasurement);
     nix::ioctl_readwrite_buf!(attestation_token, b'x', 194u8, RsiAttestation);
-    nix::ioctl_readwrite_buf!(sealing_key, b'x', 195u8, RsiSealingKey);
+    nix::ioctl_readwrite_buf!(sealing_key, b'x', 200u8, RsiSealingKey);
 }
 
 
@@ -80,7 +81,8 @@ pub struct RsiSealingKey
     pub(super) realm_sealing_key: [u8; 32]
 }
 
-impl RsiSealingKey {
+impl RsiSealingKey
+{
     pub(super) fn new(flags: u64, svn: u64) -> Self
     {
         Self { flags: flags & RSI_SEALING_KEY_FLAGS_MASK, svn, realm_sealing_key: [0u8; 32] }

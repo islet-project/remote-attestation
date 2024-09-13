@@ -1,6 +1,6 @@
 use std::{net::TcpListener, sync::Arc};
-use rustls::{crypto::ring::default_provider, ServerConfig, ServerConnection};
-use crate::{cert_resolver::RaTlsCertResolver, cert_verifier::RaTlsCertVeryfier, error::RaTlsError, tools::{load_certificates_from_pem, load_private_key_from_file}};
+use rustls::{ServerConfig, ServerConnection};
+use crate::{cert_resolver::RaTlsCertResolver, cert_verifier::RaTlsCertVeryfier, error::RaTlsError, tools::{self, load_certificates_from_pem, load_private_key_from_file}};
 use crate::connection::RaTlsConnection;
 use crate::token_resolver::InternalTokenResolver;
 use crate::token_verifier::InternalTokenVerifier;
@@ -77,7 +77,7 @@ impl RaTlsServer {
     }
 
     fn make_server_config(&self) -> Result<ServerConfig, RaTlsError> {
-        default_provider().install_default().expect("Could not install CryptoProvider");
+        tools::install_default_crypto_provider();
         match &self.mode {
             ServerMode::AttestedClient { client_token_verifier, server_certificate_path, server_privatekey_path } => {
                 Ok(ServerConfig::builder()

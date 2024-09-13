@@ -1,7 +1,7 @@
 use std::{net::TcpStream, sync::Arc};
-use rustls::{crypto::ring::default_provider, pki_types::{DnsName, ServerName}, ClientConfig, ClientConnection};
+use rustls::{pki_types::{DnsName, ServerName}, ClientConfig, ClientConnection};
 use crate::{cert_resolver::RaTlsCertResolver, cert_verifier::RaTlsCertVeryfier,
-    error::RaTlsError, tools::{load_certificates_from_pem, load_private_key_from_file, load_root_cert_store}};
+    error::RaTlsError, tools::{self, load_certificates_from_pem, load_private_key_from_file, load_root_cert_store}};
 use crate::connection::RaTlsConnection;
 use crate::token_resolver::InternalTokenResolver;
 use crate::token_verifier::InternalTokenVerifier;
@@ -33,7 +33,7 @@ impl RaTlsClient {
     }
 
     fn make_client_config(&self) -> Result<(ClientConfig, Option<String>), RaTlsError> {
-        default_provider().install_default().expect("Failed to install CryptoProvider");
+        tools::install_default_crypto_provider();
         match &self.mode {
             ClientMode::AttestedClient { client_token_resolver, root_ca_path } => {
                 Ok((ClientConfig::builder()

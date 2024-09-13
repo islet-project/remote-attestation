@@ -1,5 +1,7 @@
 use std::{fs::File, io::Read};
 use std::io::BufReader;
+use rustls::crypto::ring::default_provider;
+use rustls::crypto::CryptoProvider;
 use rustls::{pki_types::{CertificateDer, PrivateKeyDer}, RootCertStore};
 use sha2::{Digest, Sha512};
 
@@ -49,4 +51,10 @@ pub(crate) fn read_file(path: impl AsRef<str>) -> Result<Vec<u8>, std::io::Error
 
 pub fn init_logger() {
     env_logger::init();
+}
+
+pub fn install_default_crypto_provider() {
+    if CryptoProvider::get_default().is_none() {
+        default_provider().install_default().expect("Failed to install CryptoProvider");
+    }
 }

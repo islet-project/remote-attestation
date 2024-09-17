@@ -28,6 +28,8 @@ enum Commands
     VerifyPlatform(subcmds::VerifyPlatformArgs),
     /// Fetch sealing key material
     SealingKey(subcmds::SealingKey),
+    /// Fetch realm metadata
+    RealmMetadata,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>>
@@ -42,6 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
         Commands::Verify(args) => subcmds::verify(args)?,
         Commands::VerifyPlatform(args) => subcmds::verify_platform(args)?,
         Commands::SealingKey(args) => subcmds::sealing_key(args)?,
+        Commands::RealmMetadata => subcmds::realm_metadata()?,
     };
 
     Ok(())

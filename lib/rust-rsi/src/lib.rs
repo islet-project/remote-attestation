@@ -15,6 +15,7 @@ pub use ioctl::attestation_token;
 pub use ioctl::measurement_extend;
 pub use ioctl::measurement_read;
 pub use ioctl::sealing_key;
+pub use ioctl::realm_metadata;
 pub use nix::Error as NixError;
 
 pub use token::AttestationClaims;

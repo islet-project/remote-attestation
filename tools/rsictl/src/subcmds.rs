@@ -185,3 +185,10 @@ pub(crate) fn sealing_key(args: &SealingKey) -> GenericResult
 
     Ok(())
 }
+
+pub(crate) fn realm_metadata() -> GenericResult
+{
+    let realm_metadata = rust_rsi::realm_metadata()?;
+    hexdump(realm_metadata.as_slice(), 16, Some("Realm metadata"));
+    Ok(())
+}

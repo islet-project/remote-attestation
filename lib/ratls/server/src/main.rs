@@ -3,7 +3,7 @@ use std::{sync::Arc, io::Read, vec, fs::File};
 use clap::Parser;
 use log::info;
 use ratls::{RaTlsServer, ChainVerifier};
-use veraison_verifier::VeraisonTokenVerifer;
+// use veraison_verifier::VeraisonTokenVerifer;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let server = RaTlsServer::new(ratls::ServerMode::AttestedClient {
         client_token_verifier: Arc::new(ChainVerifier::new(vec![
-            Arc::new(VeraisonTokenVerifer::new(args.veraison_url, pubkey))
+//            Arc::new(VeraisonTokenVerifer::new(args.veraison_url, pubkey))
         ])),
         server_certificate_path: args.server_cert,
         server_privatekey_path: args.server_privkey

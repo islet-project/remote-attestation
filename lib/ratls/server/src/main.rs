@@ -3,7 +3,7 @@ use std::{fs::{self, File}, io::Read, path::PathBuf, sync::Arc, vec};
 use clap::Parser;
 use log::info;
 use ratls::{RaTlsServer, ChainVerifier};
-use veraison_verifier::VeraisonTokenVerifer;
+// use veraison_verifier::VeraisonTokenVerifer;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -42,11 +42,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut file = File::open(args.veraison_pubkey)?;
     file.read_to_string(&mut pubkey)?;
 
-    let veraison_ca = args.veraison_root_ca.map(|i| fs::read(i)).transpose()?;
+    // let veraison_ca = args.veraison_root_ca.map(|i| fs::read(i)).transpose()?;
 
     let server = RaTlsServer::new(ratls::ServerMode::AttestedClient {
         client_token_verifier: Arc::new(ChainVerifier::new(vec![
-            Arc::new(VeraisonTokenVerifer::new(args.veraison_url, pubkey, veraison_ca.as_deref())?)
+            // Arc::new(VeraisonTokenVerifer::new(args.veraison_url, pubkey, veraison_ca.as_deref())?)
         ])),
         server_certificate_path: args.server_cert,
         server_privatekey_path: args.server_privkey

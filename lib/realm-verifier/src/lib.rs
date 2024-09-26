@@ -61,7 +61,7 @@ fn eq_msg<T: PartialEq<U>, U>(lhs: T, rhs: U, msg: &str) -> bool {
 
 impl RealmVerifier {
     pub fn init(reference_measurements: RealmMeasurements) -> Self {
-        debug!("Reference values: {:?}", reference_measurements);
+        debug!("Reference values: {:02x?}", reference_measurements);
         Self {
             reference_measurements,
         }

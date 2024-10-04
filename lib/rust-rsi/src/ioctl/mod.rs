@@ -92,3 +92,11 @@ pub fn sealing_key(flags: u64, svn: u64) -> nix::Result<[u8; 32]>
     kernel::sealing_key(fd.get(), &mut sealing)?;
     Ok(sealing[0].realm_sealing_key)
 }
+
+pub fn realm_metadata() -> nix::Result<[u8; kernel::GRANULE_LEN as usize]>
+{
+    let mut metadata = [kernel::RsiRealmMetadata::new()];
+    let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
+    kernel::realm_metadata(fd.get(), &mut metadata)?;
+    Ok(metadata[0].metadata)
+}

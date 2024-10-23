@@ -34,7 +34,7 @@ impl MeasurementValue {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RealmMeasurements {
     pub initial: MeasurementValue,
     pub extensible: Vec<[MeasurementValue; CLAIM_COUNT_REALM_EXTENSIBLE_MEASUREMENTS]>,

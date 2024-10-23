@@ -3,7 +3,7 @@ use std::str::FromStr;
 pub const HASH_ALGO_SHA256_STR: &'static str = "sha-256";
 pub const HASH_ALGO_SHA512_STR: &'static str = "sha-512";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HashAlgo {
     name: String,
     len: usize,

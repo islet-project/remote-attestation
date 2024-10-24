@@ -7,7 +7,7 @@
 
 mod internal
 {
-    use super::{RsiMeasurement, RsiAttestation, RsiSealingKey};
+    use super::{RsiMeasurement, RsiAttestation, RsiSealingKey, RsiRealmMetadata};
 
     // TODO: These should be hex
     nix::ioctl_read!(abi_version, b'x', 190u8, u64);
@@ -15,6 +15,7 @@ mod internal
     nix::ioctl_write_buf!(measurement_extend, b'x', 193u8, RsiMeasurement);
     nix::ioctl_readwrite_buf!(attestation_token, b'x', 194u8, RsiAttestation);
     nix::ioctl_readwrite_buf!(sealing_key, b'x', 200u8, RsiSealingKey);
+    nix::ioctl_read_buf!(realm_metadata, b'x', 201u8, RsiRealmMetadata);
 }
 
 
@@ -89,6 +90,19 @@ impl RsiSealingKey
     }
 }
 
+#[repr(C)]
+pub struct RsiRealmMetadata
+{
+    pub(super) metadata: [u8;  GRANULE_LEN as usize]
+}
+
+impl RsiRealmMetadata
+{
+    pub(super) fn new() -> Self {
+        Self { metadata: [0u8; GRANULE_LEN as usize] }
+    }
+}
+
 pub(super) const fn abi_version_get_major(version: u64) -> u32
 {
     ((version & 0x7FFF0000) >> 16) as u32
@@ -122,4 +136,9 @@ pub(super) fn attestation_token(fd: i32, data: &mut [RsiAttestation]) -> nix::Re
 pub(super) fn sealing_key(fd: i32, data: &mut [RsiSealingKey]) -> nix::Result<()>
 {
     unsafe { internal::sealing_key(fd, data) }.map(|_| ())
+}
+
+pub(super) fn realm_metadata(fd: i32, data: &mut [RsiRealmMetadata]) -> nix::Result<()>
+{
+    unsafe { internal::realm_metadata(fd, data) }.map(|_| ())
 }

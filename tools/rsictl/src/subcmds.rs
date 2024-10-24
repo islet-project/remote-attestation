@@ -1,6 +1,10 @@
 use crate::tools::{self, hexdump};
 use clap::{Args, ValueEnum};
 
+const METADATA_SIGNATURE_SIZE: usize = 96;
+const METADATA_SIZE: usize = 0x150;
+const SIGNED_METADATA_SIZE: usize = METADATA_SIZE + METADATA_SIGNATURE_SIZE;
+
 pub(crate) type GenericResult = Result<(), Box<dyn std::error::Error>>;
 
 pub(crate) fn version() -> GenericResult
@@ -183,5 +187,12 @@ pub(crate) fn sealing_key(args: &SealingKey) -> GenericResult
     let key_material = tools::read_sealing_key(&args.flags, args.svn)?;
     hexdump(key_material.as_slice(), 16, Some("Generated key material"));
 
+    Ok(())
+}
+
+pub(crate) fn realm_metadata() -> GenericResult
+{
+    let realm_metadata = rust_rsi::realm_metadata()?;
+    hexdump(&realm_metadata[0..SIGNED_METADATA_SIZE] , 16, Some("Realm metadata"));
     Ok(())
 }

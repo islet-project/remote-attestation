@@ -157,7 +157,7 @@ pub(crate) fn verify_platform(args: &VerifyPlatformArgs) -> GenericResult
 #[derive(ValueEnum, Debug, Copy, Clone)]
 pub(crate) enum SealingKeyFlags
 {
-    /// Use VHUK_B insted of VHUK_A
+    /// Use VHUK_M (measurement based) instead of VHUK_A (authority based)
     Key,
 
     /// Use RIM to calculate key material

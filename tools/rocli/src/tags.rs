@@ -147,7 +147,7 @@ pub(crate) struct Validity {
 pub(crate) struct Corim {
     #[serde(rename = "corim-id")]
     pub corim_id: Uuid,
-    pub profiles: Vec<String>,
+    pub profile: String,
     pub validity: Validity,
     pub entities: Vec<Entity>
 }
@@ -175,7 +175,7 @@ pub(crate) struct Config {
     pub tag_identity: Id,
     pub entities: Vec<EntityConfig>,
     pub validity: Validity,
-    pub profiles: Vec<String>,
+    pub profile: String,
     pub environment: Option<EnvironmentConfig>
 }
 

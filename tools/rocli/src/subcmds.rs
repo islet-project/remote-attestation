@@ -56,22 +56,16 @@ pub(crate) fn make_refvals(token: AttestationClaims, config: Config) -> Result<O
         triples: Triples::ReferenceValues(vec![
             ReferenceValue {
                 environment: envir,
-                measurements: measurements
+                measurements
             }
         ])
     }))
 }
 
-pub(crate) fn make_corim(token: AttestationClaims, config: Config) -> Result<Output, RocliError> {
-    let plat_claims = PlatClaims::from_raw_claims(&token.platform_claims.token_claims)?;
-
-    if config.profiles.iter().find(|i| **i ==  plat_claims.profile).is_none() {
-        return Err(RocliError::ProfileNotAllowed(plat_claims.profile))
-    }
-
+pub(crate) fn make_corim(config: Config) -> Result<Output, RocliError> {
     Ok(Output::Corim(Corim {
         corim_id: config.tag_identity.id,
-        profiles: vec![plat_claims.profile],
+        profile: config.profile,
         validity: config.validity,
         entities: config.entities.into_iter().map(|i| i.to_corim_entity()).collect()
     }))

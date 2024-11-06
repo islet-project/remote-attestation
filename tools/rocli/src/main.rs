@@ -70,7 +70,7 @@ fn main() -> Result<(), RocliError> {
     let comid = match cli.command {
         Commands::Endorsements { cpak, cpak_type } => make_endorsements(cpak, cpak_type, token, config)?,
         Commands::Refvals { } => make_refvals(token, config)?,
-        Commands::Corim { } => make_corim(token, config)?
+        Commands::Corim { } => make_corim(config)?
     };
 
     if let Some(path) = cli.output {

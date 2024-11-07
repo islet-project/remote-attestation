@@ -1,4 +1,4 @@
-use std::{sync::Arc, io::Read, vec, fs::File};
+use std::{fs::{self, File}, io::Read, path::PathBuf, sync::Arc, vec};
 
 use clap::Parser;
 use log::info;
@@ -21,12 +21,16 @@ struct Args {
     server_privkey: String,
 
     /// Veraison verification service host
-    #[arg(short = 'v', long, default_value = "http://localhost:8080")]
+    #[arg(short = 'v', long, default_value = "https://localhost:8080")]
     veraison_url: String,
 
     /// Veraisons public key to verify attestation results
     #[arg(short = 'p', long)]
-    veraison_pubkey: String
+    veraison_pubkey: String,
+
+    /// Veraisons root-ca if not provided https cert verification is disabled
+    #[arg(short = 'r', long)]
+    veraison_root_ca: Option<PathBuf>
 }
 
 
@@ -38,9 +42,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut file = File::open(args.veraison_pubkey)?;
     file.read_to_string(&mut pubkey)?;
 
+    let veraison_ca = args.veraison_root_ca.map(|i| fs::read(i)).transpose()?;
+
     let server = RaTlsServer::new(ratls::ServerMode::AttestedClient {
         client_token_verifier: Arc::new(ChainVerifier::new(vec![
-            Arc::new(VeraisonTokenVerifer::new(args.veraison_url, pubkey))
+            Arc::new(VeraisonTokenVerifer::new(args.veraison_url, pubkey, veraison_ca.as_deref())?)
         ])),
         server_certificate_path: args.server_cert,
         server_privatekey_path: args.server_privkey

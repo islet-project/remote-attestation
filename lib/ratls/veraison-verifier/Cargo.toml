@@ -11,6 +11,6 @@ ratls = { path = "../ratls" }
 reqwest = { version = "*", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 serde = { version = "*", features = ["derive", "alloc"] }
 serde_json = { version = "*", features = ["alloc"] }
-ear = { git = "https://github.com/veraison/rust-ear" }
+ear = "0.3.0"
 rust-rsi = { path = "../../rust-rsi" }
 base64 = { version = "*", features = ["alloc"] }

@@ -1,5 +1,3 @@
-use std::{fs, path::Path};
-
 use crate::{error::VeraisonTokenVeriferError, structs::{NewSessionresponse, SessionState, VerificationResults}};
 use ear::{Ear, TrustTier};
 use log::{error, info, trace};

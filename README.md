@@ -7,6 +7,7 @@
   * https://github.com/islet-project/rust-rsi
   * https://github.com/islet-project/rocli
   * https://github.com/islet-project/rsictl
+  * https://github.com/islet-project/veraison-verifier
 
 # Content
 
